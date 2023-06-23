@@ -657,12 +657,11 @@ class CommandEvaluator(object):
         return b
 
     def _EvalCaseArg(self, arg, blame):
-        # type: (case_arg_t, loc_t) -> str
-        """Evaluate a `case_arg` into a `str` which can be matched on in a case
+        # type: (case_arg_t, loc_t) -> Any
+        """Evaluate a `case_arg` into a `PyObject_t` which can be matched on in a case
         command.
 
-        TODO: return a value, the str conversion is lossy and we want to match on
-              type + value.
+        TODO: return a value, we will have to wait for progress on the expression evaluator here
         """
         UP_arg = arg
         with tagswitch(arg) as case:
@@ -674,7 +673,7 @@ class CommandEvaluator(object):
                 if mylib.PYTHON:
                     arg = cast(case_arg.YshExpr, UP_arg)
                     obj = self.expr_ev.EvalExpr(arg.e, blame)
-                    return str(obj)  # TODO: handle typed args
+                    return obj
 
         # note, right now this is reachable in mycpp
         # we will have to wait until we can match on typed args before we can support
@@ -1508,26 +1507,45 @@ class CommandEvaluator(object):
                 status = 0  # If there are no arms, it should be zero?
                 done = False
 
-                for case_arm in node.arms:
-                    if case_arm.pattern.tag() != pat_e.Words:
-                        # TODO: support more than pat.Words
-                        raise NotImplementedError()
+                if mylib.PYTHON:
+                    for case_arm in node.arms:
+                        with tagswitch(case_arm.pattern) as case:
+                            if case(pat_e.Words):
+                                pat_words = cast(pat.Words, case_arm.pattern)
 
-                    pat_words = cast(pat.Words, case_arm.pattern)
+                                for pat_word in pat_words.words:
+                                    # NOTE: Is it OK that we're evaluating these as we go?
+                                    # TODO: test it out in a loop
+                                    pat_val = self.word_ev.EvalWordToString(
+                                        pat_word, word_eval.QUOTE_FNMATCH)
 
-                    for pat_word in pat_words.words:
-                        # NOTE: Is it OK that we're evaluating these as we go?
-                        # TODO: test it out in a loop
-                        pat_val = self.word_ev.EvalWordToString(
-                            pat_word, word_eval.QUOTE_FNMATCH)
+                                    #log('Matching word %r against pattern %r', to_match, pat_val.s)
+                                    if libc.fnmatch(pat_val.s, str(to_match)):
+                                        status = self._ExecuteList(case_arm.action)
+                                        done = True  # TODO: Parse ;;& and for fallthrough and such?
+                                        break  # Only execute action ONCE
 
-                        #log('Matching word %r against pattern %r', to_match, pat_val.s)
-                        if libc.fnmatch(pat_val.s, to_match):
-                            status = self._ExecuteList(case_arm.action)
-                            done = True  # TODO: Parse ;;& and for fallthrough and such?
-                            break  # Only execute action ONCE
-                    if done:
-                        break
+                            elif case(pat_e.YshExprs):
+                                pat_exprs = cast(pat.YshExprs, case_arm.pattern)
+
+                                for pat_expr in pat_exprs.exprs:
+                                    pat_val = self.expr_ev.EvalExpr(pat_expr, case_arm.left)
+
+                                    if pat_val == to_match:
+                                        status = self._ExecuteList(case_arm.action)
+                                        done = True
+                                        break
+
+                            if case(pat_e.Eggex):
+                                raise NotImplementedError()
+
+                            elif case(pat_e.Else):
+                                status = self._ExecuteList(case_arm.action)
+                                done = True
+                                break
+
+                        if done:
+                            break
 
             elif case(command_e.TimeBlock):
                 node = cast(command.TimeBlock, UP_node)
