@@ -238,8 +238,7 @@ def _ValueToPyObj(val):
 
         elif case(value_e.MaybeStrArray):
             val = cast(value.MaybeStrArray, UP_val)
-            # XXX type checker is somehow OK with this (holes)?
-            return objects.StrArray(val.strs)
+            return val.strs
 
         elif case(value_e.List):
             val = cast(value.List, UP_val)

@@ -228,9 +228,15 @@ def _ValueToPartValue(val, quoted):
         elif case(value_e.Obj):
             if mylib.PYTHON:
                 val = cast(value.Obj, UP_val)
+
                 from ysh import expr_eval
-                s = expr_eval.Stringify(val.obj)
-                return part_value.String(s, quoted, not quoted)
+                if isinstance(val.obj, list):
+                  strs = [expr_eval.Stringify(item) for item in val.obj]
+                  return part_value.Array(strs)
+
+                else:
+                  s = expr_eval.Stringify(val.obj)
+                  return part_value.String(s, quoted, not quoted)
             # Not in C++
             raise AssertionError()
 
@@ -734,8 +740,12 @@ class AbstractWordEvaluator(StringWordEvaluator):
                 val = cast(value.AssocArray, UP_val)
                 length = len(val.d)
 
-            else:
-                raise AssertionError()
+            elif case(value_e.Obj):
+                val = cast(value.Obj, UP_val)
+                if isinstance(val.obj, list):
+                    length = len(val.obj)
+                else:
+                    raise AssertionError(val)
 
         return value.Str(str(length))
 
