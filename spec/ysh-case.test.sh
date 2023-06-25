@@ -91,11 +91,26 @@ case (x) {
   ("0") { echo string }
 }
 
-# FIXME: stdout should be "string", but right now it is "int"
-
 ## status: 0
 ## STDOUT:
 string
+## END
+
+#### order of resolution
+
+for x in (["a", "b", "none"]) {
+  case (x) {
+    ("a") { echo a }
+    (else) { echo else }
+    ("b") { echo b }
+  }
+}
+
+## status: 0
+## STDOUT:
+a
+else
+else
 ## END
 
 #### old and new case statements
