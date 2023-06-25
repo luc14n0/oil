@@ -1536,7 +1536,7 @@ class CommandEvaluator(object):
                                         done = True
                                         break
 
-                            if case(pat_e.Eggex):
+                            elif case(pat_e.Eggex):
                                 raise NotImplementedError()
 
                             elif case(pat_e.Else):
