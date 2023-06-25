@@ -231,12 +231,11 @@ def _ValueToPartValue(val, quoted):
 
                 from ysh import expr_eval
                 if isinstance(val.obj, list):
-                  strs = [expr_eval.Stringify(item) for item in val.obj]
-                  return part_value.Array(strs)
-
+                    strs = [expr_eval.Stringify(item) for item in val.obj]
+                    return part_value.Array(strs)
                 else:
-                  s = expr_eval.Stringify(val.obj)
-                  return part_value.String(s, quoted, not quoted)
+                    s = expr_eval.Stringify(val.obj)
+                    return part_value.String(s, quoted, not quoted)
             # Not in C++
             raise AssertionError()
 
