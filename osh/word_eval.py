@@ -741,10 +741,13 @@ class AbstractWordEvaluator(StringWordEvaluator):
 
             elif case(value_e.Obj):
                 val = cast(value.Obj, UP_val)
-                if isinstance(val.obj, list):
-                    length = len(val.obj)
+                if mylib.PYTHON:
+                    if isinstance(val.obj, list):
+                        length = len(val.obj)
+                    else:
+                        raise AssertionError(val)
                 else:
-                    raise AssertionError(val)
+                    length = -1   # TODO: remove this
 
         return value.Str(str(length))
 
