@@ -30,6 +30,7 @@ from _devbuild.gen.runtime_asdl import (
     value,
     value_e,
     value_t,
+    value_str,
     part_value,
     part_value_e,
     part_value_t,
@@ -234,8 +235,9 @@ def _ValueToPartValue(val, quoted):
             raise AssertionError()
 
         else:
-            # Undef should be caught by _EmptyStrOrError().
-            raise AssertionError(val.tag())
+            #raise AssertionError(val)
+            raise error.InvalidType(
+                "Can't expand %s into word" % value_str(val.tag()), loc.Missing)
 
     raise AssertionError('for -Wreturn-type in C++')
 
@@ -1648,6 +1650,7 @@ class AbstractWordEvaluator(StringWordEvaluator):
                         val = cast(value.MaybeStrArray, UP_val)
                         items = val.strs
                     elif case2(value_e.AssocArray):
+                        # Should we force an explicit @[d->keys()] ?
                         val = cast(value.AssocArray, UP_val)
                         items = val.d.keys()
 
@@ -1661,8 +1664,8 @@ class AbstractWordEvaluator(StringWordEvaluator):
                             raise AssertionError()
 
                     else:
-                        e_die("Can't splice %r" % part.var_name,
-                              loc.WordPart(part))
+                        raise error.InvalidType(
+                            "Can't splice %r" % part.var_name, loc.WordPart(part))
 
                 part_vals.append(part_value.Array(items))
 

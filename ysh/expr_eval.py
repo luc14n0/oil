@@ -85,6 +85,8 @@ def LookupVar(mem, var_name, which_scopes, var_loc):
         # TODO: Location info
         e_die('Undefined variable %r' % var_name, var_loc)
 
+    return _ValueToPyObj(val)
+
     UP_val = val
     with tagswitch(val) as case:
         if case(value_e.Str):
@@ -283,6 +285,10 @@ def _ValueToPyObj(val):
 
         elif case(value_e.Block):
             return val  # passthrough
+
+        elif case(value_e.Obj):
+            val = cast(value.Obj, UP_val)
+            return val.obj
 
         else:
             raise error.Expr(
